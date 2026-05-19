@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>우파루 계산기</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f5f6f8;
+            margin: 0;
+            padding: 16px;
+            color: #111;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: #fff;
+            padding: 16px;
+            border-radius: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+            margin-bottom: 16px;
+        }
+
+        /* ===== 헤더 ===== */
+
+        .header-meta {
+            text-align: center;
+            margin-bottom: 16px;
+            font-size: 13px;
+            color: #666;
+            font-weight: 600;
+        }
+
+        /* ===== 전역 안내 아이콘 ===== */
+
+        .notice-icon {
+            position: absolute;
+            top: 14px;
+            left: 12px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            color: #4b5cff;
+            font-weight: 800;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 3000;
+        }
+
+        .notice-popup {
+            position: absolute;
+            top: 44px;
+            left: 12px;
+            width: 220px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            padding: 12px;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #333;
+            display: none;
+            z-index: 3000;
+        }
+
+        .notice-icon.info {
+            top: 14px;
+        }
+
+        .notice-icon.update {
+            top: 44px;
+            background: #e7f7ef;
+            color: #2f8f5b;
+        }
+
+        /* ===== 모드 선택 ===== */
+
+        .mode-select {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            border-radius: 12px;
+            border: 1px solid #ddd;
+            background: #fff;
+        }
+
+        /* ===== 입력 ===== */
+
+        .input-wrapper {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            box-sizing: border-box;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #6c7cff;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            background: #6c7cff;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* ===== 태그 입력 ===== */
+
+        .tag-input {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+            padding: 0px 10px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            background: #fafafa;
+            min-height: 46px;
+        }
+
+        .tag-input:focus-within {
+            border-color: #6c7cff;
+            background: #fff;
+        }
+
+        .tag {
+            background: #e9ebf8;
+            color: #3a3f80;
+            padding: 6px 10px;
+            margin: 6px 0px;
+            border-radius: 999px;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            animation: pop 0.15s ease;
+        }
+
+        .tag.exclude {
+            background: #ffecec;
+            color: #b33a3a;
+        }
+
+        @keyframes pop {
+            from { transform: scale(0.9); opacity: 0; }
+            to   { transform: scale(1); opacity: 1; }
+        }
+
+        .tag .remove {
+            cursor: pointer;
+            font-weight: bold;
+            opacity: 0.5;
+        }
+
+        .tag .remove:hover {
+            opacity: 1;
+        }
+
+        .tag-input input {
+            border: none;
+            outline: none;
+            flex: 1;
+            min-width: 120px;
+            font-size: 15px;
+            padding: 6px;
+            margin: 6px;
+            background: transparent;
+        }
+
+        /* ===== 자동완성 ===== */
+
+        .autocomplete {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+            max-height: 220px;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .autocomplete-item {
+            padding: 12px 14px;
+            font-size: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+        }
+
+        .autocomplete-item:hover {
+            background: #f2f3ff;
+        }
+
+        .autocomplete-item .highlight {
+            color: #6c7cff;
+            font-weight: 700;
+        }
+
+        /* ===== 결과 ===== */
+
+        .result-card {
+            border: 1px solid #eee;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 12px;
+        }
+
+        .pair, .wooparoo {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .metrics {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .gem, .rate {
+            font-weight: 700;
+            color: #6c7cff;
+        }
+
+        .cross-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .input-wrapper label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #444;
+        }
+
+        /* ===== 대미지 ===== */
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            font-weight: 700;
+            color: #444;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+        }
+
+        .damage-result-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .damage-result {
+            background: linear-gradient(135deg, #f8f9ff 0%, #eef1ff 100%);
+            border: 1px solid #dfe4ff;
+            border-radius: 16px;
+            padding: 18px;
+            text-align: center;
+        }
+
+        .damage-result .title {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .damage-result .value {
+            font-size: 28px;
+            font-weight: 800;
+            color: #4b5cff;
+            letter-spacing: -0.5px;
+        }
+
+        .damage-result.crit {
+            background: linear-gradient(135deg, #fff4f4 0%, #ffe5e5 100%);
+            border-color: #ffcaca;
+        }
+
+        .damage-result.crit .value {
+            color: #ff4d4f;
+        }
+
+        .card {
+            transition: all 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-1px);
+        }
+
+        /* ===== 대미지 폼 전용 input ===== */
+
+        #damageForm input[type="number"],
+        #damageForm select {
+            width: 100%;
+            padding: 14px 16px;
+            font-size: 15px;
+            border-radius: 14px;
+            border: 1.5px solid #dfe3f0;
+            background: #f9faff;
+            box-sizing: border-box;
+
+            transition:
+                border-color 0.18s ease,
+                box-shadow 0.18s ease,
+                background 0.18s ease;
+        }
+
+        #damageForm input[type="number"]:focus,
+        #damageForm select:focus {
+            outline: none;
+            border-color: #6c7cff;
+            background: #fff;
+
+            box-shadow:
+                0 0 0 4px rgba(108,124,255,0.12);
+        }
+
+        /* number 화살표 제거 */
+
+        input[type=number]::-webkit-outer-spin-button,
+        input[type=number]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        /* label */
+
+        .input-wrapper label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 800;
+            color: #5a6480;
+            letter-spacing: -0.2px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- 전역 안내 -->
+<div class="notice-icon info" id="infoToggle">ⓘ</div>
+<!-- <div class="notice-icon update" id="updateToggle">🕘</div> -->
+
+<div class="notice-popup" id="infoPopup">
+    <strong>안내</strong><br>
+    본 서비스는 개인 분석 및 정보 제공용이며<br>
+    <b>절대 상업적 목적이 아닙니다.</b><br>
+    게임 데이터의 소유권은<br>
+    해당 게임사에 있습니다.
+</div>
+
+<!-- <div class="notice-popup" id="updatePopup">
+    <strong>업데이트 내역</strong><br><br>
+    <b>2026-01-20</b><br>
+    • 업데이트 내용<br>
+    • 만들까 말까<br><br>
+</div> -->
+
+<h2>🥚 우파루 계산기</h2>
+
+<div class="header-meta">
+    Made by 라이칸#0001
+</div>
+
+<!-- 모드 선택 -->
+<div class="card">
+    <select id="modeSelect" class="mode-select">
+        <option value="expectation">🎯 우파루 기댓값 계산</option>
+        <option value="cross">🔎 크로스 확률 조회</option>
+        <option value="damage">⚔️ 대미지 계산</option>
+    </select>
+</div>
+
+<!-- 기댓값 -->
+<div class="card" id="expectationForm">
+    <div class="input-wrapper">
+        <div class="tag-input" id="targetTagInput">
+            <input type="text" id="targetInput" placeholder="목표 우파루 입력" autocomplete="off">
+        </div>
+        <div class="autocomplete" id="targetAutocomplete"></div>
+    </div>
+
+    <div class="input-wrapper">
+        <div class="tag-input" id="excludeTagInput">
+            <input type="text" id="excludeInput" placeholder="❌ 제외할 우파루" autocomplete="off">
+        </div>
+        <div class="autocomplete" id="excludeAutocomplete"></div>
+    </div>
+
+    <button id="expectationBtn">기댓값 계산</button>
+</div>
+
+<!-- 크로스 -->
+<div class="card" id="crossForm" style="display:none;">
+    <div class="input-wrapper">
+        <input type="text" id="leftInput" placeholder="왼쪽 우파루" autocomplete="off">
+        <div class="autocomplete" id="leftAutocomplete"></div>
+    </div>
+    <div class="input-wrapper">
+        <input type="text" id="rightInput" placeholder="오른쪽 우파루" autocomplete="off">
+        <div class="autocomplete" id="rightAutocomplete"></div>
+    </div>
+    <button id="crossBtn">확률 조회</button>
+</div>
+
+<!-- 대미지 -->
+<div class="card" id="damageForm" style="display:none;">
+    <div class="input-wrapper">
+        <label for="baseAttack">고유 공격력</label>
+        <input type="number" min="0" step="1" id="baseAttack" placeholder="15369">
+    </div>
+
+    <div class="input-wrapper">
+        <label for="upgradePercent">승급 효과(%)</label>
+        <select id="upgradePercent" class="mode-select">
+            <option value="10">1성</option>
+            <option value="20">2성</option>
+            <option value="35">3성</option>
+            <option value="55">4성</option>
+            <option value="75" selected>5성</option>
+        </select>
+    </div>
+
+    <div class="input-wrapper">
+        <label for="upgradeBonusPercent">승급 보너스(%)</label>
+        <input type="number" min="0" step="1" id="upgradeBonusPercent" placeholder="350">
+    </div>
+
+    <div class="input-wrapper">
+        <label for="bondFlat">인연 보너스</label>
+        <input type="number" min="0" step="1" id="bondFlat" placeholder="8715">
+    </div>
+
+    <div class="input-wrapper">
+        <label for="bondPercent">인연 보너스(%)</label>
+        <input type="number" min="0" step="1" id="bondPercent" placeholder="299">
+    </div>
+
+    <div class="input-wrapper">
+        <label for="medalPercent">메달 보너스(%)</label>
+        <select id="medalPercent" class="mode-select">
+            <option value="5">1단계</option>
+            <option value="10">2단계</option>
+            <option value="15">3단계</option>
+            <option value="20">4단계</option>
+            <option value="25">5단계</option>
+            <option value="30">6단계</option>
+            <option value="35">7단계</option>
+            <option value="40">8단계</option>
+            <option value="50">9단계</option>
+            <option value="55">10단계</option>
+            <option value="60">11단계</option>
+            <option value="70">12단계</option>
+            <option value="80" selected>13단계</option>
+        </select>
+    </div>
+
+    <div class="input-wrapper">
+        <label for="guildSkillPercent">길드 스킬(%)</label>
+        <input type="number" min="0" step="1" id="guildSkillPercent" value="3" placeholder="3">
+    </div>
+
+    <div class="input-wrapper">
+        <label for="transcendencePercent">별새김 효과(%)</label>
+        <select id="transcendencePercent" class="mode-select">
+            <option value="5">1성</option>
+            <option value="10">2성</option>
+            <option value="15" selected>3성</option>
+            <option value="20">4성</option>
+            <option value="25">5성</option>
+        </select>
+    </div>
+
+    <div class="input-wrapper">
+        <label for="transcendenceBonusPercent">별새김 보너스(%)</label>
+        <input type="number" min="0" step="1" id="transcendenceBonusPercent" placeholder="35">
+    </div>
+
+    <div class="input-wrapper">
+        <label for="critDamageBonus">치명타 피해 증가(%)</label>
+        <input type="number" min="0" step="0.1" id="critDamageBonus" placeholder="1.4">
+    </div>
+
+    <div class="input-wrapper">
+        <label for="skillPower">최종 스킬 파워</label>
+        <input type="number" min="0" step="10" id="skillPower" placeholder="총 스킬 파워 합">
+    </div>
+
+    <div class="input-wrapper">
+        <label class="checkbox-label">
+            <input type="checkbox" id="seasonBuff" checked>
+            시즌 보너스 (+30%)
+        </label>
+    </div>
+
+    <button id="damageBtn">대미지 계산</button>
+</div>
+
+<!-- 결과 -->
+<div class="card" id="resultCard" style="display:none;">
+    <h2 id="resultTitle"></h2>
+    <div id="resultList"></div>
+</div>
+
+<script>
+    const modeSelect = document.getElementById("modeSelect");
+
+    const expectationForm = document.getElementById("expectationForm");
+    const crossForm = document.getElementById("crossForm");
+    const damageForm = document.getElementById("damageForm");
+
+    const resultCard = document.getElementById("resultCard");
+    const resultList = document.getElementById("resultList");
+    const resultTitle = document.getElementById("resultTitle");
+
+    const targetInput = document.getElementById("targetInput");
+    const targetAutocomplete = document.getElementById("targetAutocomplete");
+    const excludeInput = document.getElementById("excludeInput");
+    const excludeAutocomplete = document.getElementById("excludeAutocomplete");
+    const expectationBtn = document.getElementById("expectationBtn");
+
+    const leftInput = document.getElementById("leftInput");
+    const leftAutocomplete = document.getElementById("leftAutocomplete");
+    const rightInput = document.getElementById("rightInput");
+    const rightAutocomplete = document.getElementById("rightAutocomplete");
+    const crossBtn = document.getElementById("crossBtn");
+
+    const selectedTargets = [];
+    const selectedExcludes = [];
+
+    const baseAttack = document.getElementById("baseAttack");
+    const upgradePercent = document.getElementById("upgradePercent");
+    const upgradeBonusPercent = document.getElementById("upgradeBonusPercent");
+    const bondFlat = document.getElementById("bondFlat");
+    const bondPercent = document.getElementById("bondPercent");
+    const medalPercent = document.getElementById("medalPercent");
+    const guildSkillPercent = document.getElementById("guildSkillPercent");
+    const transcendencePercent = document.getElementById("transcendencePercent");
+    const transcendenceBonusPercent = document.getElementById("transcendenceBonusPercent");
+    const critDamageBonus = document.getElementById("critDamageBonus");
+    const skillPower = document.getElementById("skillPower");
+    const seasonBuff = document.getElementById("seasonBuff");
+    const damageBtn = document.getElementById("damageBtn");
+
+    modeSelect.addEventListener("change", () => {
+        clearTargetTags();
+        clearExcludeTags();
+
+        const mode = modeSelect.value;
+
+        expectationForm.style.display = mode === "expectation" ? "block" : "none";
+        crossForm.style.display = mode === "cross" ? "block" : "none";
+        damageForm.style.display = mode === "damage" ? "block" : "none";
+
+        targetInput.value = "";
+        excludeInput.value = "";
+        leftInput.value = "";
+        rightInput.value = "";
+
+        targetAutocomplete.innerHTML = "";
+        excludeAutocomplete.innerHTML = "";
+        leftAutocomplete.innerHTML = "";
+        rightAutocomplete.innerHTML = "";
+
+        resultCard.style.display = "none";
+        resultList.innerHTML = "";
+    });
+
+    function setupAutocomplete(inputId, listId) {
+        const input = document.getElementById(inputId);
+        const list = document.getElementById(listId);
+        let controller;
+
+        input.addEventListener("input", async () => {
+            const keyword = input.value.trim();
+
+            if (!keyword) {
+                list.innerHTML = "";
+                return;
+            }
+
+            if (controller) controller.abort();
+            controller = new AbortController();
+
+            const res = await fetch(`/api/wooparoo/search?keyword=${encodeURIComponent(keyword)}`, {
+                signal: controller.signal
+            });
+            if (!res.ok) return;
+
+            const data = await res.json();
+            list.innerHTML = "";
+
+            const keywordLower = keyword.toLowerCase();
+
+            data.sort((a, b) => {
+                const aExact = a.toLowerCase() === keywordLower;
+                const bExact = b.toLowerCase() === keywordLower;
+
+                if (aExact && !bExact) return -1;
+                if (!aExact && bExact) return 1;
+                return 0;
+            });
+
+            data.forEach(name => {
+                const div = document.createElement("div");
+                div.className = "autocomplete-item";
+                div.innerHTML = highlightMatch(name, keyword);
+                div.onclick = () => {
+                    if (input.id === "excludeInput") {
+                        addExcludeTag(name);
+                    } else {
+                        addTag(name);
+                    }
+                    list.innerHTML = "";
+                };
+                list.appendChild(div);
+            });
+        });
+
+        document.addEventListener("click", e => {
+            if (!input.contains(e.target) && !list.contains(e.target)) {
+                list.innerHTML = "";
+            }
+        });
+    }
+
+    setupAutocomplete("targetInput", "targetAutocomplete");
+    setupAutocomplete("excludeInput", "excludeAutocomplete");
+    setupAutocomplete("leftInput", "leftAutocomplete");
+    setupAutocomplete("rightInput", "rightAutocomplete");
+
+    function renderResults(mode, data) {
+        resultCard.style.display = "block";
+        resultList.innerHTML = "";
+
+        if (!data.length) {
+            resultList.innerHTML = "결과 없음";
+            return;
+        }
+
+        if (mode === "expectation") {
+            resultTitle.textContent = "🏆 추천 조합 TOP 50";
+            data.forEach(r => {
+                resultList.innerHTML += `
+                    <div class="result-card">
+                        <div class="pair">${r.left} + ${r.right}</div>
+                        <div class="metrics">
+                            <div>확률 ${r.targetRate.toFixed(2)}%</div>
+                            <div class="gem">💎 ${r.expectedGem.toFixed(2)}</div>
+                        </div>
+                    </div>`;
+            });
+        } else {
+            resultTitle.textContent = "📊 크로스 확률 TOP 50";
+            data.forEach(r => {
+                resultList.innerHTML += `
+                    <div class="result-card cross-row">
+                        <div class="wooparoo">${r.wooparoo}</div>
+                        <div class="rate">${r.rate}%</div>
+                    </div>`;
+            });
+        }
+    }
+
+    expectationBtn.onclick = async () => {
+        if (selectedTargets.length === 0) return;
+
+        const params = new URLSearchParams();
+        selectedTargets.forEach(t => params.append("target", t));
+        selectedExcludes.forEach(e => params.append("exclude", e));
+        params.append("crossType", 2);
+
+        const res = await fetch("/api/expectation/multi", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: params
+        });
+
+        renderResults("expectation", await res.json());
+    };
+
+    crossBtn.onclick = async () => {
+        if (!leftInput.value || !rightInput.value) return;
+
+        const res = await fetch("/api/cross", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({
+                left: leftInput.value,
+                right: rightInput.value,
+                crossType: 2,
+                luckUpEvent: false
+            })
+        });
+
+        renderResults("cross", await res.json());
+    };
+
+    function setupPopup(toggleId, popupId) {
+        const toggle = document.getElementById(toggleId);
+        const popup = document.getElementById(popupId);
+
+        toggle.addEventListener("click", e => {
+            e.stopPropagation();
+
+            // 다른 팝업 닫기
+            document.querySelectorAll(".notice-popup").forEach(p => {
+                if (p !== popup) p.style.display = "none";
+            });
+
+            popup.style.display =
+                popup.style.display === "block" ? "none" : "block";
+        });
+    }
+
+    setupPopup("infoToggle", "infoPopup");
+    //setupPopup("updateToggle", "updatePopup");
+
+    document.addEventListener("click", () => {
+        document.querySelectorAll(".notice-popup")
+            .forEach(p => p.style.display = "none");
+    });
+
+    function bindEnter(inputId, listId, action) {
+        const input = document.getElementById(inputId);
+        const list = document.getElementById(listId);
+
+        targetInput.addEventListener("keydown", e => {
+            if (e.key !== "Enter") return;
+
+            e.preventDefault();
+
+            if (targetAutocomplete.children.length > 0) {
+                targetAutocomplete.children[0].click();
+            }
+        });
+
+        excludeInput.addEventListener("keydown", e => {
+            if (e.key !== "Enter") return;
+
+            e.preventDefault();
+
+            if (excludeAutocomplete.children.length > 0) {
+                excludeAutocomplete.children[0].click();
+            }
+        });
+    }
+
+    bindEnter("targetInput", "targetAutocomplete", () => expectationBtn.click());
+    bindEnter("excludeInput", "excludeAutocomplete", () => expectationBtn.click());
+    bindEnter("leftInput", "leftAutocomplete", () => crossBtn.click());
+    bindEnter("rightInput", "rightAutocomplete", () => crossBtn.click());
+
+    function highlightMatch(text, keyword) {
+        if (!keyword) return text;
+
+        const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const regex = new RegExp(`(${escaped})`, "gi");
+
+        return text.replace(regex, `<span class="highlight">$1</span>`);
+    }
+
+    function addTag(name) {
+        if (selectedTargets.includes(name)) return;
+
+        selectedTargets.push(name);
+
+        const tag = document.createElement("div");
+        tag.className = "tag";
+        tag.innerHTML = `
+            ${name}
+            <span class="remove">×</span>
+        `;
+
+        tag.querySelector(".remove").onclick = () => {
+            selectedTargets.splice(selectedTargets.indexOf(name), 1);
+            tag.remove();
+        };
+
+        const wrapper = document.getElementById("targetTagInput");
+        wrapper.insertBefore(tag, targetInput);
+
+       targetInput.value = "";
+    }
+
+    function addExcludeTag(name) {
+        if (selectedExcludes.includes(name)) return;
+
+        selectedExcludes.push(name);
+
+        const tag = document.createElement("div");
+        tag.className = "tag exclude";
+        tag.innerHTML = `
+            ${name}
+            <span class="remove">×</span>
+        `;
+
+        tag.querySelector(".remove").onclick = () => {
+            selectedExcludes.splice(selectedExcludes.indexOf(name), 1);
+            tag.remove();
+        };
+
+        const wrapper = document.getElementById("excludeTagInput");
+        wrapper.insertBefore(tag, document.getElementById("excludeInput"));
+
+        document.getElementById("excludeInput").value = "";
+    }
+
+    function clearTargetTags() {
+        selectedTargets.length = 0;
+
+        const wrapper = document.getElementById("targetTagInput");
+        wrapper.querySelectorAll(".tag").forEach(tag => tag.remove());
+    }
+
+    function clearExcludeTags() {
+        selectedExcludes.length = 0;
+
+        const wrapper = document.getElementById("excludeTagInput");
+        wrapper.querySelectorAll(".tag").forEach(tag => tag.remove());
+    }
+
+    damageBtn.onclick = () => {
+        const baseAtk = Number(baseAttack.value || 0);
+
+        const totalPercent =
+            Number(upgradePercent.value || 0) +
+            Number(upgradeBonusPercent.value || 0) +
+            Number(bondPercent.value || 0) +
+            Number(medalPercent.value || 0) +
+            Number(guildSkillPercent.value || 0) +
+            Number(transcendencePercent.value || 0) +
+            Number(transcendenceBonusPercent.value || 0);
+
+        let finalAttack =
+            baseAtk * (1 + totalPercent / 100)
+            + Number(bondFlat.value || 0);
+
+        if (seasonBuff.checked) {
+            finalAttack *= 1.3;
+        }
+
+        const normalDamage =
+            finalAttack * (1 + Number(skillPower.value || 0) / 1000) * 0.97;
+
+        const critMultiplier =
+            1.2 + Number(critDamageBonus.value || 0) / 100;
+
+        const critDamage =
+            normalDamage * critMultiplier;
+
+        resultCard.style.display = "block";
+
+        resultTitle.textContent = "⚔️ 대미지 계산 결과";
+
+        resultList.innerHTML = `
+            <div class="damage-result-grid">
+
+                <div class="damage-result">
+                    <div class="title">최종 공격력</div>
+                    <div class="value">
+                        ${Math.floor(finalAttack).toLocaleString()}
+                    </div>
+                </div>
+
+                <div class="damage-result">
+                    <div class="title">일반 대미지</div>
+                    <div class="value">
+                        ${Math.floor(normalDamage).toLocaleString()}
+                    </div>
+                </div>
+
+                <div class="damage-result crit">
+                    <div class="title">치명타 대미지</div>
+                    <div class="value">
+                        ${Math.floor(critDamage).toLocaleString()}
+                    </div>
+                </div>
+
+            </div>
+        `;
+    };
+</script>
+
+</body>
+</html>

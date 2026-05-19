@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>우파루 조합 조회</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f5f6f8;
+            margin: 0;
+            padding: 16px;
+            color: #111;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: #fff;
+            padding: 16px;
+            border-radius: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+            margin-bottom: 16px;
+        }
+
+        /* ===== 입력 ===== */
+
+        .input-wrapper {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            box-sizing: border-box;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #6c7cff;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            background: #6c7cff;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: bold;
+        }
+
+        /* ===== 자동완성 ===== */
+
+        .autocomplete {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+            max-height: 220px;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .autocomplete-item {
+            padding: 12px 14px;
+            font-size: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .autocomplete-item:hover,
+        .autocomplete-item:active {
+            background: #f2f3ff;
+        }
+
+        /* ===== 결과 ===== */
+
+        .result-card {
+            border: 1px solid #eee;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 12px;
+        }
+
+        .wooparoo {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .rate {
+            font-size: 14px;
+            color: #6c7cff;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+
+<h2>🔗 우파루 조합 조회</h2>
+
+<!-- 입력 카드 -->
+<div class="card">
+    <form method="post" action="/cross">
+
+        <div class="input-wrapper">
+            <input type="text"
+                   name="left"
+                   id="leftInput"
+                   placeholder="왼쪽 우파루"
+                   autocomplete="off"
+                   required>
+            <div class="autocomplete" id="leftAutocomplete"></div>
+        </div>
+
+        <div class="input-wrapper">
+            <input type="text"
+                   name="right"
+                   id="rightInput"
+                   placeholder="오른쪽 우파루"
+                   autocomplete="off"
+                   required>
+            <div class="autocomplete" id="rightAutocomplete"></div>
+        </div>
+
+        <input type="hidden" name="crossType" value="2">
+        <input type="hidden" name="luckUpEvent" value="false">
+
+        <button type="submit">조합 결과 보기</button>
+    </form>
+</div>
+
+<!-- 결과 카드 -->
+<div class="card" th:if="${results}">
+    <h2>📊 조합 결과 TOP 50</h2>
+
+    <div th:if="${#lists.isEmpty(results)}">
+        결과 없음
+    </div>
+
+    <div th:each="r : ${results}" class="result-card">
+        <div class="wooparoo" th:text="${r.wooparoo}"></div>
+        <div class="rate">
+            확률 <span th:text="${r.rate}"></span>%
+        </div>
+    </div>
+</div>
+
+<script>
+    function setupAutocomplete(inputId, listId) {
+        const input = document.getElementById(inputId);
+        const list = document.getElementById(listId);
+        let controller = null;
+
+        input.addEventListener("input", async () => {
+            const keyword = input.value.trim();
+
+            if (controller) controller.abort();
+            list.innerHTML = "";
+            if (!keyword) return;
+
+            controller = new AbortController();
+
+            try {
+                const res = await fetch(
+                    `/api/wooparoo/search?keyword=${encodeURIComponent(keyword)}`,
+                    { signal: controller.signal }
+                );
+
+                if (!res.ok) return;
+
+                const data = await res.json();
+                list.innerHTML = "";
+
+                data.forEach(name => {
+                    const item = document.createElement("div");
+                    item.className = "autocomplete-item";
+                    item.textContent = name;
+
+                    item.onclick = () => {
+                        input.value = name;
+                        list.innerHTML = "";
+                    };
+
+                    list.appendChild(item);
+                });
+            } catch (e) {
+                if (e.name !== "AbortError") console.error(e);
+            }
+        });
+
+        document.addEventListener("click", e => {
+            if (!input.contains(e.target) && !list.contains(e.target)) {
+                list.innerHTML = "";
+            }
+        });
+    }
+
+    setupAutocomplete("leftInput", "leftAutocomplete");
+    setupAutocomplete("rightInput", "rightAutocomplete");
+</script>
+
+</body>
+</html>
